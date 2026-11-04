@@ -52,9 +52,11 @@ respuestas JSON.
 - **Comportamiento que añadimos o contrato que evolucionamos**:
   Cambiamos el texto plano inicial por respuestas en formato JSON. Introducimos el modelo interno `Book`, los objetos de transferencia de datos (`BookRequestDTO` y `BookResponseDTO`) y el almacenamiento de libros en memoria mediante una colección.
 
+
 - **Test y rojo observado (distinguir compilación/configuración de comportamiento)**:
   - *Compilación/Estructura:* Al activar la Entrega 2 (`java classroom/ActivarEntrega.java 2`), los tests no compilaban inicialmente porque faltaban los récords/clases de los DTOs y el modelo `Book`.
   - *Comportamiento:* Tras crear las estructuras mínimas, el test `BookCheckpoint02Test` falló (rojo) porque el controlador devolvía cadenas de texto (`text/plain`) en lugar de objetos y listas en JSON (`application/json`).
+
 
 - **Cambio mínimo y resultado verde**:
   - Creamos los récords `BookRequestDTO` (entrada sin `id`) y `BookResponseDTO` (salida con `id`).
@@ -63,15 +65,62 @@ respuestas JSON.
   - Actualizamos los endpoints para que reciban `@RequestBody BookRequestDTO` y devuelvan DTOs convertidos a JSON.
   - Ejecutamos `./mvnw test` y conseguimos que los tests pasaran a verde.
 
+
 - **Refactorización**:
-  Creamos un método privado auxiliar `toResponseDTO(Book book)` dentro del controlador para no repetir la conversión de `Book` a `BookResponseDTO` en cada endpoint.
+  Creamos un método privado auxiliar `toResponseDTO(Book book)` dentro del controlador para no repetir la conversión de 
+`Book` a `BookResponseDTO` en cada endpoint.
+
 
 - **Decisiones sobre capas y contrato HTTP**:
-  - **DTOs vs Modelo:** Separamos el modelo interno (`Book`) de la representación externa (`BookRequestDTO` para peticiones y `BookResponseDTO` para respuestas) para no exponer nuestra estructura interna directamente.
+  - **DTOs vs Modelo:** Separamos el modelo interno (`Book`) de la representación externa (`BookRequestDTO` para peticiones
+y `BookResponseDTO` para respuestas) para no exponer nuestra estructura interna directamente.
   - **Uso de colecciones seguras:** Usamos `HashMap` y `AtomicLong` para asegurarnos de que la aplicación no falle ni pise datos si varios usuarios intentan crear o consultar libros exactamente al mismo tiempo.
   - **Contrato HTTP temporal:** En esta fase, la creación (`POST`) responde estado `200 OK` con el JSON del nuevo libro.
+
 
 - **Contribuciones, revisión y siguiente paso**:
   - Implementación en grupo de los DTOs, el modelo y la adaptación del controlador.
   - Revisión del código para comprender el paso de JSON a objetos Java (`@RequestBody`) y viceversa.
   - Siguiente paso: Activar la Entrega 3.
+
+---
+
+## Entrega 3
+
+- **Comportamiento que añadimos o contrato que evolucionamos**:
+  Mejoramos los códigos de respuesta HTTP usando `ResponseEntity`. Ahora, al crear un libro (`POST`), la API
+responde con un `201 Created` y añade la cabecera `Location: /books/{id}` con la URL del libro recién creado.
+Al borrar (`DELETE`), responde con un `204 No Content` sin enviar ningún cuerpo. Las consultas (`GET`) y 
+modificaciones (`PUT`) siguen devolviendo `200 OK`.
+
+
+- **Test y rojo observado (distinguir compilación/configuración de comportamiento)**:
+  - *Compilación:* El proyecto compilaba bien sin errores de código ni de imports.
+  - *Comportamiento:* Al activar la entrega (`java classroom/ActivarEntrega.java 3`), el test `BookCheckpoint03Test` falló
+  porque el `POST` devolvía un `200 OK` en vez de un `201` y no traía la cabecera `Location`, y el `DELETE` devolvía
+  un `200` en lugar de un `204`.
+
+- **Cambio mínimo y resultado verde**:
+  - Cambiamos el tipo de retorno de los métodos de `BookController.java` para que todos devuelvan un `ResponseEntity`.
+  - En el `POST /books`, pusimos `ResponseEntity.created(URI.create("/books/" + newId)).body(response)`.
+  - En el `DELETE /books/{id}`, usamos `ResponseEntity.noContent().build()`.
+  - Volvimos a lanzar `./mvnw test` y la prueba pasó a verde.
+
+
+- **Refactorización**:
+  Dejamos todos los endpoints del controlador adaptados para que devuelvan siempre sus respuestas envueltas en un `ResponseEntity`
+de forma limpia.
+
+
+- **Decisiones sobre capas y contrato HTTP**:
+- **Uso de ResponseEntity:** Nos sirve para controlar exactamente qué código de estado (`201`, `204`, `200`, `404`) y qué
+cabeceras devolvemos al cliente en cada caso.
+- **Cabecera Location:** Sirve para informarle a quien use la API de la ruta exacta donde se puede consultar el nuevo libro
+creado.
+
+
+- **Contribuciones, revisión y siguiente paso**:
+  - **Contribuciones:** Modificación del controlador `BookController.java`, comprobación de los tests y redacción de este
+  apartado de aprendizaje.
+  - **Siguiente paso:** Activar la **Entrega 4** (`java classroom/ActivarEntrega.java 4`) para sacar la lógica y la lista
+  en memoria del controlador y llevarlas a una clase de servicio (`BookService`).
