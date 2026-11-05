@@ -2,76 +2,57 @@ package com.example.catalog.web;
 
 import com.example.catalog.dto.BookRequestDTO;
 import com.example.catalog.dto.BookResponseDTO;
-import com.example.catalog.model.Book;
+import com.example.catalog.service.BookService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
 
 @RestController
 @RequestMapping("/books")
 public class BookController {
 
-    private final Map<Long, Book> books = new HashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final BookService service;
+
+    // Inyección de dependencias por constructor
+    public BookController(BookService service) {
+        this.service = service;
+    }
 
     @GetMapping
     public ResponseEntity<List<BookResponseDTO>> list() {
-        List<BookResponseDTO> list = books.values().stream()
-                .map(this::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(service.list());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<BookResponseDTO> getOne(@PathVariable("id") Long id) {
-        Book book = books.get(id);
+        BookResponseDTO book = service.get(id);
         if (book == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(toResponseDTO(book));
+        return ResponseEntity.ok(book);
     }
 
     @PostMapping
     public ResponseEntity<BookResponseDTO> create(@RequestBody BookRequestDTO request) {
-        Long newId = idGenerator.getAndIncrement();
-        Book book = new Book(newId, request.isbn(), request.title(), request.author(), request.year());
-        books.put(newId, book);
-
-        BookResponseDTO response = toResponseDTO(book);
-        URI location = URI.create("/books/" + newId);
-
-        return ResponseEntity.created(location).body(response);
+        BookResponseDTO created = service.create(request);
+        URI location = URI.create("/books/" + created.id());
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<BookResponseDTO> update(@PathVariable("id") Long id, @RequestBody BookRequestDTO request) {
-        Book book = books.get(id);
-        if (book != null) {
-            book.setIsbn(request.isbn());
-            book.setTitle(request.title());
-            book.setAuthor(request.author());
-            book.setYear(request.year());
-            return ResponseEntity.ok(toResponseDTO(book));
+        BookResponseDTO updated = service.update(id, request);
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
-        books.remove(id);
+        service.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private BookResponseDTO toResponseDTO(Book book) {
-        return new BookResponseDTO(
-                book.getId(),
-                book.getIsbn(),
-                book.getTitle(),
-                book.getAuthor(),
-                book.getYear()
-        );
     }
 }

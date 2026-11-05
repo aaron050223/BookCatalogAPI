@@ -124,3 +124,31 @@ creado.
   apartado de aprendizaje.
   - **Siguiente paso:** Activar la **Entrega 4** (`java classroom/ActivarEntrega.java 4`) para sacar la lógica y la lista
   en memoria del controlador y llevarlas a una clase de servicio (`BookService`).
+
+---
+
+## Entrega 4
+
+- **Comportamiento que añadimos o contrato que evolucionamos**:
+  Separamos la lógica de nuestra aplicación en capas. Sacamos del controlador el mapa donde guardábamos los libros en memoria y el contador de IDs, y los llevamos a una nueva clase de servicio (`BookService`).
+
+- **Test y rojo observado (distinguir compilación/configuración de comportamiento)**:
+  - *Compilación/Estructura:* Al activar la Entrega 4 (`java classroom/ActivarEntrega.java 4`), el proyecto no compilaba porque los tests buscaban la clase/interfaz `BookService` que aún no habíamos creado.
+  - *Comportamiento:* Tras crear la estructura básica de `BookService`, los tests verificaron que el controlador realmente llamaba a los métodos del servicio en lugar de procesar los datos él mismo.
+
+- **Cambio mínimo y resultado verde**:
+  - Creamos la clase `BookService` con `@Service` para gestionar la colección en memoria y la conversión de los libros a DTOs.
+  - Modificamos `BookController` para recibir el servicio a través de su constructor y delegarle todas las operaciones (`list`, `get`, `create`, `update`, `delete`).
+  - Al ejecutar `./mvnw test`, confirmamos que todos los métodos devolvían el resultado esperado a través del servicio y pasaban a verde.
+
+- **Refactorización**:
+  Movimos el método auxiliar de conversión `toResponseDTO` del controlador hacia la clase `BookService`, haciendo que el controlador dependa únicamente del servicio para obtener los datos listos.
+
+- **Decisiones sobre capas y contrato HTTP**:
+  - **Separación limpia:** El servicio solo maneja datos en Java y desconoce completamente el protocolo HTTP (no usa anotaciones de Spring Web ni respuestas `ResponseEntity`).
+  - **Controlador delgado:** El controlador se limita a recibir la petición HTTP, pedir los datos al servicio y devolver la respuesta con el código HTTP adecuado (`200`, `201` o `204`).
+
+- **Contribuciones, revisión y siguiente paso**:
+  - Creación de la capa de servicio y refactorización conjunta del controlador para aplicar la inyección de dependencias por constructor.
+  - Revisión del código para entender cómo se delegan las responsabilidades entre Controller y Service.
+  - Siguiente paso: Activar la Entrega 5.
